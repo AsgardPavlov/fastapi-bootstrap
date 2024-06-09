@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres:
+    env_file:
+      - .env
+    image: postgres:latest
+    container_name: phys-tech-db
+    environment:
+      POSTGRES_DB: '${DB_NAME}'
+      POSTGRES_USER: '${DB_USER}'
+      POSTGRES_PASSWORD: '${DB_PASS}'
+    ports:
+      - "5432:5432"
+    networks:
+      - shared_network
+    healthcheck:
+      test: [ 'CMD-SHELL', 'pg_isready -U postgres' ]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phys-tech-web
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - shared_network
+
+#  nginx:
+#    image: nginx:latest
+#    container_name: phys-tech-nginx
+#    ports:
+#      - "80:80"
+#    volumes:
+#      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+#    depends_on:
+#      - fastapi
+#    networks:
+#      - shared_network
+
+networks:
+  shared_network: {}
